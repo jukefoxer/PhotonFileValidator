@@ -6,6 +6,7 @@ import com.intellij.uiDesigner.core.Spacer;
 import photon.application.MainForm;
 import photon.application.utilities.PhotonSupportWorker;
 import photon.file.PhotonFile;
+import photon.file.parts.photon.PhotonFileHeader;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,6 +19,7 @@ public class SupportDialog extends JDialog {
     public static final int PILLAR_SIZE_PIXELS_DEFAULT = 8;
     public static final int SUPPORT_DIST_PIXELS_DEFAULT = 12;
     public static final int CONTACT_HEIGHT_LAYERS_DEFAULT = 30;
+    public static final float LIFT_MODEL_MM_DEFAULT = 0;
 
     private JPanel contentPane;
     public JButton buttonOK;
@@ -28,6 +30,7 @@ public class SupportDialog extends JDialog {
     private JTextField supportDistanceTextField;
     private JTextField contactHeightTextField;
     private JTextField pillarSizeTextField;
+    private JTextField liftModelMmTextField;
 
     private SupportDialog me;
     private MainForm mainForm;
@@ -59,12 +62,14 @@ public class SupportDialog extends JDialog {
                 int pillarSizePixels = PILLAR_SIZE_PIXELS_DEFAULT;
                 int supportDistPixels = SUPPORT_DIST_PIXELS_DEFAULT;
                 int contactHeightLayers = CONTACT_HEIGHT_LAYERS_DEFAULT;
+                float liftModelMm = LIFT_MODEL_MM_DEFAULT;
                 try {
                     contactSizePixels = Integer.parseInt(contactSizeTextFeld.getText());
                     pillarSizePixels = Integer.parseInt(pillarSizeTextField.getText());
                     contactHeightLayers = Integer.parseInt(contactHeightTextField.getText());
                     supportDistPixels = Integer.parseInt(supportDistanceTextField.getText());
-                    PhotonSupportWorker photonSupportWorker = new PhotonSupportWorker(me, mainForm.photonFile, mainForm, contactSizePixels, pillarSizePixels, supportDistPixels, contactHeightLayers);
+                    liftModelMm = Float.parseFloat(liftModelMmTextField.getText());
+                    PhotonSupportWorker photonSupportWorker = new PhotonSupportWorker(me, mainForm.photonFile, mainForm, contactSizePixels, pillarSizePixels, supportDistPixels, contactHeightLayers, liftModelMm);
                     photonSupportWorker.execute();
                 } catch (Exception exception) {
                     JOptionPane.showMessageDialog(null, "Invalid parameters.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -82,6 +87,12 @@ public class SupportDialog extends JDialog {
         pillarSizeTextField.setText("" + PILLAR_SIZE_PIXELS_DEFAULT);
         contactHeightTextField.setText("" + CONTACT_HEIGHT_LAYERS_DEFAULT);
         supportDistanceTextField.setText("" + SUPPORT_DIST_PIXELS_DEFAULT);
+        liftModelMmTextField.setText("" + LIFT_MODEL_MM_DEFAULT);
+        // Lifting is not available for Photon S files, because layer copying doesn't seem to be possible
+        if (!(mainForm.photonFile.getPhotonFileHeader() instanceof PhotonFileHeader)) {
+            liftModelMmTextField.setText("0");
+            liftModelMmTextField.setEnabled(false);
+        }
     }
 
     private void onOK() {
@@ -93,7 +104,10 @@ public class SupportDialog extends JDialog {
         this.photonFile = photonFile;
         setTitle("Create really fine supports!");
 
-        showProgressHtml("Press start....");
+        showProgressHtml("Tweak your resin settings, so that the exposure is high enough <br/>" +
+                "to keep the model connected to the supports during the <br/>" +
+                "print, but low enough, so that the supports can easily be <br/>" +
+                "removed before post-curing.<br/><br/>Press start to create the supports ....");
 
     }
 
@@ -173,10 +187,10 @@ public class SupportDialog extends JDialog {
         startButton.setText("Start");
         panel4.add(startButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridLayoutManager(4, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel5.setLayout(new GridLayoutManager(5, 2, new Insets(0, 0, 0, 0), -1, -1));
         contentPane.add(panel5, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JLabel label2 = new JLabel();
-        label2.setText("Contact size in pixels");
+        label2.setText("Contact width and height in pixels");
         label2.setToolTipText("How big the square is that connects the supports to the model.");
         panel5.add(label2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         contactSizeTextFeld = new JTextField();
@@ -194,10 +208,15 @@ public class SupportDialog extends JDialog {
         contactHeightTextField = new JTextField();
         panel5.add(contactHeightTextField, new GridConstraints(3, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         final JLabel label5 = new JLabel();
-        label5.setText("Support pillar size in pixels");
+        label5.setText("Support pillar width and height in pixels");
         panel5.add(label5, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         pillarSizeTextField = new JTextField();
         panel5.add(pillarSizeTextField, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        final JLabel label6 = new JLabel();
+        label6.setText("Lift model before adding supports (in mm)");
+        panel5.add(label6, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        liftModelMmTextField = new JTextField();
+        panel5.add(liftModelMmTextField, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
     }
 
     /**
@@ -206,4 +225,5 @@ public class SupportDialog extends JDialog {
     public JComponent $$$getRootComponent$$$() {
         return contentPane;
     }
+
 }

@@ -193,6 +193,10 @@ public class PhotonFileHeader implements IFileHeader {
         return numberOfLayers;
     }
 
+    public void setNumberOfLayers(int numberOfLayers) {
+        this.numberOfLayers = numberOfLayers;
+    }
+
     public int getLayersDefinitionOffsetAddress() {
         return layersDefinitionOffsetAddress;
     }

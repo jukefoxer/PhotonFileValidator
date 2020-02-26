@@ -382,11 +382,18 @@ public class PhotonFile {
         findIslands();
     }
 
-    public int addFineSupport(IPhotonProgress progres, int supportDist, int contactSize, int contactHeight, int pillarSize) throws Exception {
+    public void addFineSupport(IPhotonProgress progres, int supportDist, int contactSize, int contactHeight, int pillarSize, float liftModelMm) throws Exception {
         LinkedList<SupportPillar> supportPillars = new LinkedList<>();
-        int[][] profile = getModelXYProjection(progres, contactSize, supportDist, contactHeight, contactSize, pillarSize, supportPillars);
+        int numLiftLayers = Math.round(liftModelMm/iFileHeader.getLayerHeight());
+
+        // First lift the model if requested
+        liftModel(numLiftLayers);
+
+        // Store the projection of the model on the XY plane in the profile variable
+        int[][] profile = getModelXYProjectionAndSupportPillars(progres, supportDist, contactHeight, contactSize, pillarSize, supportPillars);
+
+        // Create the support structures
         PhotonLayer layer = null;
-        int numSupports = 0;
         for (int layerNo = 0; layerNo < layers.size(); layerNo++) {
             progres.showInfo("Supported layers 0 to " +layerNo + ".");
 
@@ -398,16 +405,61 @@ public class PhotonFile {
                 fileLayer.getUpdateLayer(layer);
             }
 
-            numSupports += layer.addSupport(profile, supportPillars, contactSize, contactHeight, layerNo);
+            layer.addSupport(profile, supportPillars, contactSize, contactHeight, layerNo, iFileHeader.getBottomLayers());
+
             fileLayer.saveLayer(layer);
             calculate(layerNo);
-            System.gc();
         }
-        return numSupports;
+        System.gc();
     }
 
-    private int[][] getModelXYProjection(IPhotonProgress progres, int size, int supportDist, int contactHeight, int contactSize, int pillarSize, LinkedList<SupportPillar> supports) throws Exception {
+    private void liftModel(int numLiftLayers) throws Exception {
+        if (iFileHeader instanceof PhotonFileHeader) {
+            PhotonFileHeader header = (PhotonFileHeader) iFileHeader;
+
+            PhotonLayer layer = null;
+            for (int layerNo = 0; layerNo < numLiftLayers; layerNo++) {
+                // just copy layer 0 and correct the exposure and z height information afterwards
+                PhotonFileLayer fileLayer = layers.get(layerNo);
+                if (layer == null) {
+                    layer = fileLayer.getLayer();
+                } else {
+                    fileLayer.getUpdateLayer(layer);
+                }
+                PhotonFileLayer photonFileLayer = new PhotonFileLayer(fileLayer, header);
+                photonFileLayer.saveLayer(layer);
+
+                layers.add(0, photonFileLayer);
+            }
+            header.setNumberOfLayers(header.getNumberOfLayers() + numLiftLayers);
+            correctLayerData(layer);
+        }
+    }
+
+    private void correctLayerData(PhotonLayer layer) throws Exception {
+        for (int layerNo = 0; layerNo < layers.size(); layerNo++) {
+
+            // Unpack the layer data to the layer utility class
+            PhotonFileLayer fileLayer = layers.get(layerNo);
+            if (layer == null) {
+                layer = fileLayer.getLayer();
+            } else {
+                fileLayer.getUpdateLayer(layer);
+            }
+
+            if (layerNo < iFileHeader.getBottomLayers()) {
+                fileLayer.setLayerExposure(iFileHeader.getBottomExposureTimeSeconds());
+            } else {
+                fileLayer.setLayerExposure(iFileHeader.getExposureTimeSeconds());
+            }
+            fileLayer.setLayerPositionZ(layerNo*iFileHeader.getLayerHeight());
+        }
+    }
+
+    private int[][] getModelXYProjectionAndSupportPillars(IPhotonProgress progres, int supportDist, int contactHeight, int contactSize, int pillarSize, LinkedList<SupportPillar> supports) throws Exception {
         PhotonLayer layer = null;
+
+        // The profile variable contains the layer number of the lowest solid model part at this x/y position
         int[][] profile = new int[getWidth()][getHeight()];
         for (int y = 0; y < getWidth(); y++) {
             for (int x = 0; x < getHeight(); x++) {
@@ -424,7 +476,10 @@ public class PhotonFile {
             } else {
                 fileLayer.getUpdateLayer(layer);
             }
+
             layer.updateModelXYProjection(profile, supports, supportDist, contactHeight, layerNo, contactSize, pillarSize);
+
+            layer.addNecessarySupportPillars(profile, supports, supportDist, contactHeight, layerNo, contactSize, pillarSize);
         }
         return profile;
     }

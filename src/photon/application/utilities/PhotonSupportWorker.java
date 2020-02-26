@@ -38,11 +38,12 @@ public class PhotonSupportWorker extends SwingWorker<Integer, String> implements
     private final int pillarSizePixels;
     private final int supportDistPixels;
     private final int contactHeightLayers;
+    private final float liftModelMm;
     private photon.application.dialogs.SupportDialog SupportDialog;
     private PhotonFile photonFile;
     private MainForm mainForm;
 
-    public PhotonSupportWorker(photon.application.dialogs.SupportDialog SupportDialog, PhotonFile photonFile, MainForm mainForm, int contactSizePixels, int pillarSizePixels, int supportDistPixels, int contactHeightLayers) {
+    public PhotonSupportWorker(photon.application.dialogs.SupportDialog SupportDialog, PhotonFile photonFile, MainForm mainForm, int contactSizePixels, int pillarSizePixels, int supportDistPixels, int contactHeightLayers, float liftModelMm) {
         this.SupportDialog = SupportDialog;
         this.photonFile = photonFile;
         this.mainForm = mainForm;
@@ -50,6 +51,7 @@ public class PhotonSupportWorker extends SwingWorker<Integer, String> implements
         this.pillarSizePixels = pillarSizePixels;
         this.supportDistPixels = supportDistPixels;
         this.contactHeightLayers = contactHeightLayers;
+        this.liftModelMm = liftModelMm;
     }
 
     @Override
@@ -75,7 +77,7 @@ public class PhotonSupportWorker extends SwingWorker<Integer, String> implements
     @Override
     protected Integer doInBackground() throws Exception {
         try {
-            photonFile.addFineSupport(this, this.supportDistPixels, this.contactSizePixels, this.contactHeightLayers, this.pillarSizePixels);
+            photonFile.addFineSupport(this, this.supportDistPixels, this.contactSizePixels, this.contactHeightLayers, this.pillarSizePixels, this.liftModelMm);
         } catch (Exception e) {
             e.printStackTrace();
             publish("<br><p>" + e.toString()+ "</p>");
