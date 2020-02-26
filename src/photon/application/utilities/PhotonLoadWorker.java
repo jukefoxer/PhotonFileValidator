@@ -60,6 +60,7 @@ public class PhotonLoadWorker extends SwingWorker<Integer, String> implements IP
         mainForm.tabPreviewSmall.setEnabled(false);
         mainForm.playButton.setEnabled(false);
         mainForm.convertBtn.setEnabled(false);
+        mainForm.supportBtn.setEnabled(false);
     }
 
     @Override
@@ -76,6 +77,7 @@ public class PhotonLoadWorker extends SwingWorker<Integer, String> implements IP
             mainForm.openBtn.setEnabled(true);
             mainForm.saveBtn.setEnabled(true);
             mainForm.informationBtn.setEnabled(true);
+            mainForm.supportBtn.setEnabled(true);
             mainForm.tabPreviewLarge.setEnabled(true);
             mainForm.tabPreviewSmall.setEnabled(true);
             mainForm.showFileInformation();

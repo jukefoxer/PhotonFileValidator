@@ -24,12 +24,11 @@
 
 package photon.file.parts;
 
+import photon.application.utilities.SupportPillar;
+import photon.file.parts.photon.PhotonFileHeader;
+
 import java.awt.*;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Hashtable;
+import java.util.*;
 
 /**
  * by bn on 02/07/2018.
@@ -439,6 +438,129 @@ public class PhotonLayer {
 
     public byte get(int x, int y) {
         return iArray[y][x];
+    }
+
+    public int updateModelXYProjection(int[][] profile, LinkedList<SupportPillar> supports, int supportDist, int contactHeight, int layerNum, int contactSize, int pillarSize) {
+        int addedPixels = 0;
+        int minDist = 3;
+        int maxContactPixels;
+        int contactX = contactSize;
+        int contactY = contactSize;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (iArray[y][x] > 0) {
+                    for (int dy = -pillarSize/2; dy <= pillarSize/2-1; dy++) {
+                        for (int dx = -pillarSize / 2; dx <= pillarSize / 2 - 1; dx++) {
+                            if (y + dy > 0 && y + dy < height && x + dx > 0 && x + dx < width && profile[y + dy][x + dx] <= 0) {
+                                profile[y + dy][x + dx] = layerNum;
+                                addedPixels++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (int y = 0; y < height-supportDist; y+=supportDist) {
+            for (int x = 0 + (supportDist / 2) * ((y / supportDist) % 2); x < width - supportDist; x += supportDist) {
+                if (profile[y][x] == layerNum) {
+                    boolean shouldSupport = shouldSupport(profile, contactHeight, minDist, y, x, pillarSize / 2, pillarSize / 2 - 1);
+                    if (shouldSupport) {
+                        maxContactPixels = 1;
+                        SupportPillar support = new SupportPillar(x, y, layerNum);
+                        support.setWidth(pillarSize);
+                        support.setHeight(pillarSize);
+                        for (int dy = -support.getHeight()/2; dy < support.getHeight()/2-contactY; dy++) {
+                            for (int dx = -support.getWidth()/2; dx < support.getWidth()/2-contactX; dx++) {
+                                int numContactPixels = getNumContactPixels(x+dx, y+dy, contactX, contactY);
+                                if (numContactPixels > maxContactPixels) {
+                                    maxContactPixels = numContactPixels;
+                                    support.setContactOffsetX(dx);
+                                    support.setContactOffsetY(dy);
+                                }
+                            }
+                        }
+                        supports.add(support);
+                    }
+                }
+            }
+        }
+        return addedPixels;
+    }
+
+    int getNumContactPixels(int x, int y, int w, int h) {
+        int numContactPixels = 0;
+        for (int y1 = 0; y1 < h; y1++) {
+            for (int x1 = 0; x1 < w; x1++) {
+                if (y + y1 > 0 && y + y1 < height && x + x1 > 0 && x + x1 < width && iArray[y + y1][x + x1] > 0) {
+                    numContactPixels++;
+                }
+            }
+        }
+        return numContactPixels;
+    }
+
+    public int addSupport(int[][] profile, LinkedList<SupportPillar> supports, int contactSize, int contactHeight, int layerNum) {
+        int addedPixels = 0;
+        int contactX = contactSize;
+        int contactY = contactSize;
+        if (layerNum < 5) {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    if (profile[y][x] > 0) {
+                        for (int dy = -5; dy <= 5; dy++) {
+                            for (int dx = -5 ; dx <= 5; dx++) {
+                                if (y + dy > 0 && y + dy < height && x + dx > 0 && x + dx < width) {
+                                    supported(x+dx, y+dy);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            for (SupportPillar supportPillar : supports) {
+                int x = supportPillar.getX();
+                int y = supportPillar.getY();
+                if (layerNum <= profile[y][x] - contactHeight) {
+                    for (int dy = -supportPillar.getHeight()/2; dy <= supportPillar.getHeight()/2-1; dy++) {
+                        for (int dx = -supportPillar.getHeight()/2; dx <= supportPillar.getWidth()/2-1; dx++) {
+                            if (y + dy > 0 && y + dy < height && x + dx > 0 && x + dx < width) {// && iArray[y+dy][x+dx] != CONNECTED) {
+                                supported(x + dx, y + dy);
+                                addedPixels++;
+                            }
+                        }
+                    }
+                } else if (layerNum <= profile[y][x]+2) {
+                    addedPixels += createContact(x + supportPillar.getContactOffsetX(), y+supportPillar.getContactOffsetY(), contactX, contactY, layerNum == profile[y][x]);
+                }
+            }
+        }
+        return addedPixels;
+    }
+
+    private boolean shouldSupport(int[][] profile, int contactHeight, int minDist, int y, int x, int lowerPillarSize, int upperPillarSize) {
+        boolean shouldSupport = true;
+        for (int dy = -lowerPillarSize - minDist; dy <= upperPillarSize+minDist; dy++) {
+            for (int dx = -lowerPillarSize - minDist; dx <= upperPillarSize+minDist; dx++) {
+                if (profile[y + dy][x + dx] > 0 && profile[y + dy][x + dx] < profile[y][x]-contactHeight/2) {
+                    shouldSupport = false;
+                }
+            }
+        }
+        return shouldSupport;
+    }
+
+    private int createContact(int x, int y, int w, int h, boolean isContactLayer) {
+        int addedPixels = 0;
+        for (int dy = 0; dy <= w-1; dy++) {
+            for (int dx = -0; dx <= h-1; dx++) {
+                if (y + dy > 0 && y + dy < height && x + dx > 0 && x + dx < width) {
+                    supported(x + dx, y + dy);
+                    addedPixels++;
+                }
+            }
+        }
+        return addedPixels;
     }
 
 }

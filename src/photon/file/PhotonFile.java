@@ -24,12 +24,14 @@
 
 package photon.file;
 
+import photon.application.utilities.SupportPillar;
 import photon.file.parts.*;
 import photon.file.parts.photon.PhotonFileHeader;
 import photon.file.parts.photons.PhotonsFileHeader;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -378,6 +380,53 @@ public class PhotonFile {
 
         }
         findIslands();
+    }
+
+    public int addFineSupport(IPhotonProgress progres, int supportDist, int contactSize, int contactHeight, int pillarSize) throws Exception {
+        LinkedList<SupportPillar> supportPillars = new LinkedList<>();
+        int[][] profile = getModelXYProjection(progres, contactSize, supportDist, contactHeight, contactSize, pillarSize, supportPillars);
+        PhotonLayer layer = null;
+        int numSupports = 0;
+        for (int layerNo = 0; layerNo < layers.size(); layerNo++) {
+            progres.showInfo("Supported layers 0 to " +layerNo + ".");
+
+            // Unpack the layer data to the layer utility class
+            PhotonFileLayer fileLayer = layers.get(layerNo);
+            if (layer == null) {
+                layer = fileLayer.getLayer();
+            } else {
+                fileLayer.getUpdateLayer(layer);
+            }
+
+            numSupports += layer.addSupport(profile, supportPillars, contactSize, contactHeight, layerNo);
+            fileLayer.saveLayer(layer);
+            calculate(layerNo);
+            System.gc();
+        }
+        return numSupports;
+    }
+
+    private int[][] getModelXYProjection(IPhotonProgress progres, int size, int supportDist, int contactHeight, int contactSize, int pillarSize, LinkedList<SupportPillar> supports) throws Exception {
+        PhotonLayer layer = null;
+        int[][] profile = new int[getWidth()][getHeight()];
+        for (int y = 0; y < getWidth(); y++) {
+            for (int x = 0; x < getHeight(); x++) {
+                profile[y][x] = -1;
+            }
+        }
+        for (int layerNo = 0; layerNo < layers.size(); layerNo++) {
+            progres.showInfo("Getting shape profile for layer " +layerNo + ".");
+
+            // Unpack the layer data to the layer utility class
+            PhotonFileLayer fileLayer = layers.get(layerNo);
+            if (layer == null) {
+                layer = fileLayer.getLayer();
+            } else {
+                fileLayer.getUpdateLayer(layer);
+            }
+            layer.updateModelXYProjection(profile, supports, supportDist, contactHeight, layerNo, contactSize, pillarSize);
+        }
+        return profile;
     }
 
     private int fixit(IPhotonProgress progres, PhotonLayer layer, PhotonFileLayer fileLayer, int loops) throws Exception {

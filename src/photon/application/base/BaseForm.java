@@ -154,6 +154,17 @@ public class BaseForm {
 
     }
 
+    protected void showSupport() {
+        if (me.supportDialog == null) {
+            me.supportDialog = new SupportDialog(me);
+        }
+        me.supportDialog.setInformation(photonFile);
+        me.supportDialog.setSize(new Dimension(500, 240));
+        me.supportDialog.pack();
+        me.supportDialog.setLocationRelativeTo(me.frame);
+        me.supportDialog.setVisible(true);
+    }
+
     protected void showPreview(boolean large) {
         PhotonFilePreview preview = large ? me.photonFile.getPreviewOne() : me.photonFile.getPreviewTwo();
         if (me.previewDialog == null) {
