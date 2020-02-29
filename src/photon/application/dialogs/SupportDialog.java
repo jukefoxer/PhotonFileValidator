@@ -19,7 +19,7 @@ public class SupportDialog extends JDialog {
     public static final int PILLAR_SIZE_PIXELS_DEFAULT = 8;
     public static final int SUPPORT_DIST_PIXELS_DEFAULT = 12;
     public static final int CONTACT_HEIGHT_LAYERS_DEFAULT = 30;
-    public static final float LIFT_MODEL_MM_DEFAULT = 0;
+    public static final float LIFT_MODEL_MM_DEFAULT = 2.0f;
 
     private JPanel contentPane;
     public JButton buttonOK;
