@@ -25,6 +25,7 @@
 package photon.application.utilities;
 
 import photon.application.MainForm;
+import photon.application.dialogs.SupportDialog;
 import photon.file.PhotonFile;
 import photon.file.parts.IPhotonProgress;
 
@@ -39,11 +40,12 @@ public class PhotonSupportWorker extends SwingWorker<Integer, String> implements
     private final int supportDistPixels;
     private final int contactHeightLayers;
     private final float liftModelMm;
+    private final boolean doErode;
     private photon.application.dialogs.SupportDialog SupportDialog;
     private PhotonFile photonFile;
     private MainForm mainForm;
 
-    public PhotonSupportWorker(photon.application.dialogs.SupportDialog SupportDialog, PhotonFile photonFile, MainForm mainForm, int contactSizePixels, int pillarSizePixels, int supportDistPixels, int contactHeightLayers, float liftModelMm) {
+    public PhotonSupportWorker(photon.application.dialogs.SupportDialog SupportDialog, PhotonFile photonFile, MainForm mainForm, int contactSizePixels, int pillarSizePixels, int supportDistPixels, int contactHeightLayers, float liftModelMm, boolean doErode) {
         this.SupportDialog = SupportDialog;
         this.photonFile = photonFile;
         this.mainForm = mainForm;
@@ -52,6 +54,7 @@ public class PhotonSupportWorker extends SwingWorker<Integer, String> implements
         this.supportDistPixels = supportDistPixels;
         this.contactHeightLayers = contactHeightLayers;
         this.liftModelMm = liftModelMm;
+        this.doErode = doErode;
     }
 
     @Override
@@ -77,6 +80,9 @@ public class PhotonSupportWorker extends SwingWorker<Integer, String> implements
     @Override
     protected Integer doInBackground() throws Exception {
         try {
+            if (this.doErode) {
+                photonFile.erodeLayers(this);
+            }
             photonFile.addFineSupport(this, this.supportDistPixels, this.contactSizePixels, this.contactHeightLayers, this.pillarSizePixels, this.liftModelMm);
         } catch (Exception e) {
             e.printStackTrace();

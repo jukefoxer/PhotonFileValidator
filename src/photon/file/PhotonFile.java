@@ -382,6 +382,29 @@ public class PhotonFile {
         findIslands();
     }
 
+    public int erodeLayers(IPhotonProgress progres) throws Exception {
+        PhotonLayer layer = null;
+        int removedPixels = 0;
+        //for (int layerNo = 0; layerNo < layers.size(); layerNo++) {
+        for (int layerNo = 0; layerNo < iFileHeader.getBottomLayers(); layerNo++) {
+            progres.showInfo("Eroded layers 0 to " +layerNo + ". Removed " + removedPixels + " pixels.");
+
+            // Unpack the layer data to the layer utility class
+            PhotonFileLayer fileLayer = layers.get(layerNo);
+            if (layer == null) {
+                layer = fileLayer.getLayer();
+            } else {
+                fileLayer.getUpdateLayer(layer);
+            }
+
+            removedPixels += layer.erodePixels();
+            fileLayer.saveLayer(layer);
+            calculate(layerNo);
+            System.gc();
+        }
+        return removedPixels;
+    }
+
     public void addFineSupport(IPhotonProgress progres, int supportDist, int contactSize, int contactHeight, int pillarSize, float liftModelMm) throws Exception {
         LinkedList<SupportPillar> supportPillars = new LinkedList<>();
         int numLiftLayers = Math.round(liftModelMm/iFileHeader.getLayerHeight());
@@ -427,6 +450,7 @@ public class PhotonFile {
                     fileLayer.getUpdateLayer(layer);
                 }
                 PhotonFileLayer photonFileLayer = new PhotonFileLayer(fileLayer, header);
+                layer.clear();
                 photonFileLayer.saveLayer(layer);
 
                 layers.add(0, photonFileLayer);

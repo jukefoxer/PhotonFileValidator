@@ -25,6 +25,7 @@
 package photon.file.parts;
 
 import photon.application.utilities.SupportPillar;
+import photon.file.parts.photon.PhotonFileHeader;
 
 import java.awt.*;
 import java.util.*;
@@ -574,4 +575,34 @@ public class PhotonLayer {
         return addedPixels;
     }
 
+    public int erodePixels() {
+        int removedPixels = 0;
+        byte[][] tmpArr = new byte[height][width];
+        for (int y = 1; y < height-1; y++) {
+            for (int x = 1; x < width-1; x++) {
+                int clr=0;
+                if (iArray[y][x] > 0) clr++;
+                if (iArray[y-1][x] > 0) clr++;
+                if (iArray[y-1][x-1] > 0) clr++;
+                if (iArray[y][x-1] > 0) clr++;
+                if (iArray[y+1][x-1] > 0) clr++;
+                if (iArray[y+1][x] > 0) clr++;
+                if (iArray[y+1][x+1] > 0) clr++;
+                if (iArray[y][x+1] > 0) clr++;
+                if (iArray[y-1][x+1] > 0) clr++;
+                if (clr<9) {
+                    tmpArr[y][x]=0;
+                    if (iArray[y][x] > 0) removedPixels++;
+                } else {
+                    tmpArr[y][x]=iArray[y][x];
+                }
+            }
+        }
+        for (int y = 1; y < height-1; y++) {
+            for (int x = 1; x < width - 1; x++) {
+                iArray[y][x] = tmpArr[y][x];
+            }
+        }
+        return removedPixels;
+    }
 }

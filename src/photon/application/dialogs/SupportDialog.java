@@ -19,7 +19,8 @@ public class SupportDialog extends JDialog {
     public static final int PILLAR_SIZE_PIXELS_DEFAULT = 8;
     public static final int SUPPORT_DIST_PIXELS_DEFAULT = 12;
     public static final int CONTACT_HEIGHT_LAYERS_DEFAULT = 30;
-    public static final float LIFT_MODEL_MM_DEFAULT = 2.0f;
+    public static final float LIFT_MODEL_MM_DEFAULT = 3.0f;
+    public static final boolean ERODE_DEFAULT = false;
 
     private JPanel contentPane;
     public JButton buttonOK;
@@ -31,6 +32,7 @@ public class SupportDialog extends JDialog {
     private JTextField contactHeightTextField;
     private JTextField pillarSizeTextField;
     private JTextField liftModelMmTextField;
+    private JCheckBox erodeCheckBox;
 
     private SupportDialog me;
     private MainForm mainForm;
@@ -69,7 +71,8 @@ public class SupportDialog extends JDialog {
                     contactHeightLayers = Integer.parseInt(contactHeightTextField.getText());
                     supportDistPixels = Integer.parseInt(supportDistanceTextField.getText());
                     liftModelMm = Float.parseFloat(liftModelMmTextField.getText());
-                    PhotonSupportWorker photonSupportWorker = new PhotonSupportWorker(me, mainForm.photonFile, mainForm, contactSizePixels, pillarSizePixels, supportDistPixels, contactHeightLayers, liftModelMm);
+                    boolean doErode = erodeCheckBox.isSelected();
+                    PhotonSupportWorker photonSupportWorker = new PhotonSupportWorker(me, mainForm.photonFile, mainForm, contactSizePixels, pillarSizePixels, supportDistPixels, contactHeightLayers, liftModelMm, doErode);
                     photonSupportWorker.execute();
                 } catch (Exception exception) {
                     JOptionPane.showMessageDialog(null, "Invalid parameters.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -88,6 +91,7 @@ public class SupportDialog extends JDialog {
         contactHeightTextField.setText("" + CONTACT_HEIGHT_LAYERS_DEFAULT);
         supportDistanceTextField.setText("" + SUPPORT_DIST_PIXELS_DEFAULT);
         liftModelMmTextField.setText("" + LIFT_MODEL_MM_DEFAULT);
+        erodeCheckBox.setSelected(ERODE_DEFAULT);
         // Lifting is not available for Photon S files, because layer copying doesn't seem to be possible
         if (!(mainForm.photonFile.getPhotonFileHeader() instanceof PhotonFileHeader)) {
             liftModelMmTextField.setText("0");
@@ -187,7 +191,7 @@ public class SupportDialog extends JDialog {
         startButton.setText("Start");
         panel4.add(startButton, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridLayoutManager(5, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel5.setLayout(new GridLayoutManager(6, 2, new Insets(0, 0, 0, 0), -1, -1));
         contentPane.add(panel5, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JLabel label2 = new JLabel();
         label2.setText("Contact width in pixels");
@@ -217,6 +221,11 @@ public class SupportDialog extends JDialog {
         panel5.add(label6, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         liftModelMmTextField = new JTextField();
         panel5.add(liftModelMmTextField, new GridConstraints(4, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        erodeCheckBox = new JCheckBox();
+        erodeCheckBox.setSelected(true);
+        erodeCheckBox.setText("Erode 1 px from all model contours");
+        erodeCheckBox.setToolTipText("Eroding 1 px from all model contours compensates for the light bleeding and helps to get more precise model measurements.");
+        panel5.add(erodeCheckBox, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**
